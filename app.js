@@ -95,6 +95,7 @@ function restore(file) {
 /* ---------- routing ---------- */
 function parseHash() {
   const h = (location.hash || "").slice(1);
+  if (h === "" || h === "home") return { subject: "home", tab: "guide" };
   for (const s of SUBJECTS) {
     if (h === s.id) return { subject: s.id, tab: "guide" };
     for (const t of TABS) if (h === s.id + "-" + t.id) return { subject: s.id, tab: t.id };
@@ -105,10 +106,9 @@ let route = { subject: "java", tab: "guide" };
 function go(r, push = true) {
   route = r;
   if (push) {
-    const token = r.tab === "guide" ? r.subject : r.subject + "-" + r.tab;
+    const token = r.subject === "home" ? "home" : r.tab === "guide" ? r.subject : r.subject + "-" + r.tab;
     try { history.replaceState(null, "", "#" + token); } catch {}
   }
-  try { localStorage.setItem("fern-last-tab", JSON.stringify(r)); } catch {}
   render();
 }
 
@@ -120,6 +120,8 @@ function renderSubjects() {
 }
 
 function render() {
+  document.body.classList.toggle("on-cover", route.subject === "home");
+  if (route.subject === "home") { renderCover(); return; }
   renderSubjects();
   const s = SUBJECTS.find(x => x.id === route.subject);
   const main = $("#main");
@@ -226,6 +228,57 @@ function renderRes(panel, d) {
   $("#jumps").innerHTML = d.res.map((g, i) => `<li><a href="#s-${i}" data-jump="s-${i}">${esc(g.title)}</a></li>`).join("") + `<li><a href="#s-files" data-jump="s-files">Your source files</a></li>`;
 }
 
+/* ---------- cover page ---------- */
+const SHORT = { java: "Study guides, learning plan and cheat sheets.", terminal: "zsh on your Mac, from basics to scripts.", git: "Built from the night you set up this site.", "software-engineering": "CS 307 methods notes, with check-yourself questions." };
+function renderCover() {
+  const built = SUBJECTS.filter(s => !s.soon && DATA[s.id]);
+  const cards = built.reduce((n, s) => n + DATA[s.id].units.reduce((k, u) => k + u.topics.length, 0), 0);
+  const units = built.reduce((n, s) => n + DATA[s.id].units.length, 0);
+  $("#facts").innerHTML = [[built.length, "subjects"], [cards, "topic cards"], [units, "units"], [SUBJECTS.length - built.length, "growing next"]]
+    .map(([n, l]) => `<div><b>${n}</b>${l}</div>`).join("");
+  $("#toc").innerHTML = built.map(s => {
+    const d = DATA[s.id], total = d.units.reduce((n, u) => n + u.topics.length, 0);
+    return `<article class="toc-card"><header><h3><a href="#${s.id}" data-subject="${s.id}">${esc(s.name)}</a></h3><span class="count">${total} cards</span></header>
+      <p class="about">${esc(SHORT[s.id] || "")}</p>
+      <ol>${d.units.map(u => `<li><a href="#${s.id}" data-subject="${s.id}" data-unit="u-${u.id}"><span>${esc(u.title)}</span><span class="n">${u.topics.length}</span></a></li>`).join("")}</ol></article>`;
+  }).join("");
+  drawFern(false);
+}
+
+/* Barnsley fern: pick one of four affine maps with fixed odds, apply it, plot the point, repeat. */
+const MAPS = [
+  [0, 0, 0, 0.16, 0, 0, 0.01],
+  [0.85, 0.04, -0.04, 0.85, 0, 1.6, 0.85],
+  [0.2, -0.26, 0.23, 0.22, 0, 1.6, 0.07],
+  [-0.15, 0.28, 0.26, 0.24, 0, 0.44, 0.07],
+];
+let fernJob = 0;
+function drawFern(instant) {
+  const cv = $("#fern"), box = cv.getBoundingClientRect();
+  if (!box.width) return;
+  const dpr = Math.min(window.devicePixelRatio || 1, 2);
+  cv.width = Math.round(box.width * dpr); cv.height = Math.round(box.height * dpr);
+  const ctx = cv.getContext("2d"), css = getComputedStyle(document.documentElement);
+  const tip = css.getPropertyValue("--frond").trim(), base = css.getPropertyValue("--frond-2").trim();
+  const scale = cv.height * 0.72 / 10, ox = cv.width * 0.5 - 0.25 * scale, oy = cv.height * 0.8;
+  const size = Math.max(1, dpr * 0.8), total = 60000, my = ++fernJob;
+  let x = 0, y = 0, done = 0;
+  const batch = n => {
+    for (let i = 0; i < n && done < total; i++, done++) {
+      const r = Math.random();
+      let m = MAPS[0], acc = 0;
+      for (const k of MAPS) { acc += k[6]; if (r <= acc) { m = k; break; } }
+      const nx = m[0] * x + m[1] * y + m[4], ny = m[2] * x + m[3] * y + m[5];
+      x = nx; y = ny;
+      ctx.fillStyle = y > 1.2 ? tip : base;
+      ctx.globalAlpha = y > 1.2 ? 0.85 : 0.6;
+      ctx.fillRect(ox + x * scale, oy - y * scale, size, size);
+    }
+  };
+  if (instant || matchMedia("(prefers-reduced-motion: reduce)").matches) { batch(total); return; }
+  (function step() { if (my !== fernJob) return; batch(2500); if (done < total) requestAnimationFrame(step); })();
+}
+
 /* highlight the unit you're reading in the rail */
 let unitObserver = null;
 function watchUnits() {
@@ -247,6 +300,7 @@ function applySearch() {
   const words = q.split(/\s+/).filter(Boolean);
   const match = text => words.every(w => text.includes(w));
   let shown = 0;
+  if (route.subject === "home") return;
   if (route.tab === "guide" && DATA[route.subject]) {
     const topics = {};
     DATA[route.subject].units.forEach(u => u.topics.forEach(t => topics[t.id] = (t.title + " " + t.idea + " " + t.src).toLowerCase() + " " + t.text));
@@ -267,8 +321,9 @@ function setOpen(card, open) {
 }
 document.addEventListener("click", e => {
   const t = e.target;
-  if (t.closest("#skip")) { e.preventDefault(); $("#main").focus(); $("#main").scrollIntoView(); return; }
-  if (t.closest("#theme")) { setTheme(document.documentElement.getAttribute("data-fern-theme") === "light" ? "dark" : "light", true); return; }
+  if (t.closest("#skip")) { e.preventDefault(); const m = route.subject === "home" ? $("#cover") : $("#main"); m.focus(); m.scrollIntoView(); return; }
+  if (t.closest("#theme")) { setTheme(document.documentElement.getAttribute("data-fern-theme") === "light" ? "dark" : "light", true); if (route.subject === "home") drawFern(true); return; }
+  if (t.closest("[data-home]")) { e.preventDefault(); $("#q").value = ""; go({ subject: "home", tab: "guide" }); window.scrollTo(0, 0); return; }
   if (t.closest("#backup")) { backup(); return; }
   if (t.closest("#restore")) { $("#restore-file").click(); return; }
   const dis = t.closest(".disclosure");
@@ -280,7 +335,11 @@ document.addEventListener("click", e => {
   const tab = t.closest("[data-tab]");
   if (tab) { e.preventDefault(); go({ subject: route.subject, tab: tab.dataset.tab }); window.scrollTo(0, 0); return; }
   const subj = t.closest("[data-subject]");
-  if (subj) { e.preventDefault(); $("#q").value = ""; go({ subject: subj.dataset.subject, tab: "guide" }); window.scrollTo(0, 0); return; }
+  if (subj) {
+    e.preventDefault(); $("#q").value = ""; go({ subject: subj.dataset.subject, tab: "guide" }); window.scrollTo(0, 0);
+    const u = subj.dataset.unit && document.getElementById(subj.dataset.unit); if (u) u.scrollIntoView();
+    return;
+  }
   const jump = t.closest("[data-jump]");
   if (jump) { e.preventDefault(); const el = document.getElementById(jump.dataset.jump); if (el) el.scrollIntoView({ behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth" }); }
 });
@@ -300,8 +359,8 @@ window.addEventListener("hashchange", () => { const r = parseHash(); if (r) { ro
   setTheme(theme, false);
   initStore();
   let r = parseHash();
-  if (!r) { try { r = JSON.parse(localStorage.getItem("fern-last-tab")); } catch {} }
-  if (!r || !SUBJECTS.some(s => s.id === r.subject) || !TABS.some(t => t.id === r.tab)) r = { subject: "java", tab: "guide" };
+  if (!r || (r.subject !== "home" && (!SUBJECTS.some(s => s.id === r.subject) || !TABS.some(t => t.id === r.tab)))) r = { subject: "home", tab: "guide" };
   route = r;
   render();
 })();
+let fernResize; addEventListener("resize", () => { if (route.subject !== "home") return; clearTimeout(fernResize); fernResize = setTimeout(() => drawFern(true), 150); });
