@@ -4,6 +4,7 @@ const SUBJECTS = [
   { id: "terminal", name: "Terminal", blurb: "The command line on your Mac (zsh), from the very basics to running Java, Homebrew, SSH and shell scripts." },
   { id: "git", name: "Git", blurb: "Git and GitHub from the ground up, built from the night you set up this site. Includes the real errors you hit and how you fixed them." },
   { id: "software-engineering", name: "Software Engineering", blurb: "Your CS 307 development and testing methods notes: requirements, RAD and JAD, testing, maintenance and refactoring. Each card ends with a check-yourself question." },
+  { id: "ai", name: "AI Crash Course with Fern", steps: true, blurb: "How AI systems really work, in 6 short modules: models, tokens, training, prompts, agents and tools, and AI security. Small Java examples throughout, and your own Garden agents as the running example." },
   { id: "cpp", name: "C++", soon: "Will be built from your C++ study guide, with side-by-side comparisons to Java." },
   { id: "javascript", name: "JavaScript", soon: "Will be built from your 10-day JavaScript crash course." },
   { id: "cybersecurity", name: "Cybersecurity", soon: "Will be built from your 12-week cybersecurity and ethical hacking course." },
@@ -153,6 +154,11 @@ function render() {
 }
 
 function renderGuide(panel, d) {
+  const steps = !!SUBJECTS.find(x => x.id === route.subject).steps;
+  const split = u => { const [a, ...b] = u.title.split(" · "); return b.length ? [a, b.join(" · ")] : ["", u.title]; };
+  const stepBar = !steps ? "" : `<nav class="steps" aria-label="Modules">${d.units.map((u, i) => `<button data-step="${i}" aria-label="${esc(u.title)}" data-tip="${esc(split(u)[1])}">${i + 1}</button>`).join("")}</nav>`;
+  const head = (u, i) => !steps ? `<h2>${esc(u.title)}</h2>` : `<p class="step-kicker">${esc(split(u)[0])} of ${d.units.length}</p><h2 tabindex="-1">${esc(split(u)[1])}</h2>`;
+  const foot = i => !steps ? "" : `<div class="step-nav">${i > 0 ? `<button class="btn" data-step="${i - 1}" data-go>← ${esc(split(d.units[i - 1])[1])}</button>` : "<span></span>"}${i < d.units.length - 1 ? `<button class="btn primary" data-step="${i + 1}" data-go>Next: ${esc(split(d.units[i + 1])[1])} →</button>` : ""}</div>`;
   const total = d.units.reduce((n, u) => n + u.topics.length, 0);
   panel.innerHTML = `
     <div class="toolbar">
@@ -160,9 +166,10 @@ function renderGuide(panel, d) {
       <button class="btn" data-act="collapse">Collapse all</button>
       <span class="hint">${total} topics · read the main idea, open a card for the details</span>
     </div>
-    ${d.units.map(u => `
+    ${stepBar}
+    ${d.units.map((u, i) => `
       <section class="unit" id="u-${u.id}" data-unit="${u.id}">
-        <div class="unit-head"><h2>${esc(u.title)}</h2><p>${esc(u.blurb)}</p></div>
+        <div class="unit-head">${head(u, i)}<p>${esc(u.blurb)}</p></div>
         <div class="topics">
           ${u.topics.map(t => `
             <article class="topic" data-id="${t.id}">
@@ -183,8 +190,14 @@ function renderGuide(panel, d) {
               </div>
             </article>`).join("")}
         </div>
+        ${foot(i)}
       </section>`).join("")}
     <p class="empty" id="no-results" hidden>No topics match your search.</p>`;
+  if (steps) {
+    $("#jumps").innerHTML = d.units.map((u, i) => `<li><a href="#u-${u.id}" data-step="${i}" data-go>${esc(u.title)}</a></li>`).join("");
+    setStep(getStep(route.subject, d.units.length), false);
+    return;
+  }
   $("#jumps").innerHTML = d.units.map(u => `<li><a href="#u-${u.id}" data-jump="u-${u.id}">${esc(u.title)}</a></li>`).join("");
   watchUnits();
 }
@@ -229,7 +242,7 @@ function renderRes(panel, d) {
 }
 
 /* ---------- cover page ---------- */
-const SHORT = { java: "Study guides, learning plan and cheat sheets.", terminal: "zsh on your Mac, from basics to scripts.", git: "Built from the night you set up this site.", "software-engineering": "CS 307 methods notes, with check-yourself questions." };
+const SHORT = { ai: "6 modules: LLMs, tokens, agents, AI security.", java: "Study guides, learning plan and cheat sheets.", terminal: "zsh on your Mac, from basics to scripts.", git: "Built from the night you set up this site.", "software-engineering": "CS 307 methods notes, with check-yourself questions." };
 function renderCover() {
   const built = SUBJECTS.filter(s => !s.soon && DATA[s.id]);
   const cards = built.reduce((n, s) => n + DATA[s.id].units.reduce((k, u) => k + u.topics.length, 0), 0);
@@ -281,6 +294,14 @@ function drawFern(instant) {
 
 /* highlight the unit you're reading in the rail */
 let unitObserver = null;
+const STEP_KEY = "fern-step-";
+function getStep(id, n) { let i = 0; try { i = +localStorage.getItem(STEP_KEY + id) || 0; } catch {} return Math.min(Math.max(i, 0), n - 1); }
+function setStep(i, focus) {
+  try { localStorage.setItem(STEP_KEY + route.subject, i); } catch {}
+  document.querySelectorAll(".unit").forEach((u, k) => u.classList.toggle("step-off", k !== i));
+  document.querySelectorAll("[data-step]").forEach(b => { const on = +b.dataset.step === i; if (b.closest(".steps")) b.setAttribute("aria-current", on ? "step" : "false"); else b.classList.toggle("on", on); });
+  if (focus) { const h = document.querySelectorAll(".unit")[i]; if (h) { h.scrollIntoView(); $("h2", h).focus({ preventScroll: true }); } }
+}
 function watchUnits() {
   if (unitObserver) unitObserver.disconnect();
   if (!("IntersectionObserver" in window)) return;
@@ -310,6 +331,7 @@ function applySearch() {
     document.querySelectorAll("[data-text]").forEach(el => { const ok = !words.length || match(el.dataset.text); el.hidden = !ok; if (ok) shown++; });
     document.querySelectorAll(".vocab-group, .res-group").forEach(g => g.hidden = !g.querySelector("[data-text]:not([hidden])"));
   }
+  const panel = $("#panel"); if (panel) panel.classList.toggle("searching", words.length > 0);
   const nr = $("#no-results"); if (nr) nr.hidden = shown > 0;
 }
 
@@ -332,12 +354,16 @@ document.addEventListener("click", e => {
   if (got) { toggleDone(got.dataset.got); applyProgress(); return; }
   const act = t.closest("[data-act]");
   if (act) { document.querySelectorAll(".topic:not([hidden])").forEach(c => setOpen(c, act.dataset.act === "expand")); return; }
+  const step = t.closest("[data-step]");
+  if (step) { e.preventDefault(); setStep(+step.dataset.step, step.hasAttribute("data-go")); return; }
   const tab = t.closest("[data-tab]");
   if (tab) { e.preventDefault(); go({ subject: route.subject, tab: tab.dataset.tab }); window.scrollTo(0, 0); return; }
   const subj = t.closest("[data-subject]");
   if (subj) {
     e.preventDefault(); $("#q").value = ""; go({ subject: subj.dataset.subject, tab: "guide" }); window.scrollTo(0, 0);
-    const u = subj.dataset.unit && document.getElementById(subj.dataset.unit); if (u) u.scrollIntoView();
+    const u = subj.dataset.unit && document.getElementById(subj.dataset.unit);
+    if (u && u.parentNode.querySelector(".steps")) setStep([...document.querySelectorAll(".unit")].indexOf(u), true);
+    else if (u) u.scrollIntoView();
     return;
   }
   const jump = t.closest("[data-jump]");

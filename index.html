@@ -3,9 +3,32 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<style>:root{box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style>
+<style>:root{box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0}img{max-width:100%}[hidden]{display:none!important}
+/* numbered module steps (subjects with steps: true) */
+.steps { display: flex; flex-wrap: wrap; gap: 8px; margin: 0 0 40px; }
+.steps button {
+  position: relative; width: 44px; height: 44px; border-radius: 50%; border: 1px solid var(--line); background: var(--surface);
+  font-weight: 700; font-size: 16px; color: var(--muted); font-variant-numeric: tabular-nums;
+}
+.steps button:hover, .steps button:focus-visible { border-color: var(--accent); color: var(--accent); }
+.steps button[aria-current="step"] { background: var(--accent); border-color: var(--accent); color: var(--accent-fg); }
+.steps button::after {
+  content: attr(data-tip); position: absolute; top: calc(100% + 8px); left: 50%; transform: translateX(-50%);
+  background: var(--surface-2); color: var(--fg); border: 1px solid var(--line); border-radius: 6px; padding: 4px 9px;
+  font-size: 13px; font-weight: 600; white-space: nowrap; pointer-events: none; opacity: 0; transition: opacity .12s; z-index: 5;
+}
+.steps button:hover::after, .steps button:focus-visible::after { opacity: 1; }
+.step-kicker { margin: 0 0 2px; font-family: var(--font-mono); font-size: 13px; letter-spacing: .08em; text-transform: uppercase; color: var(--accent); }
+.unit-head h2:focus { outline: none; }
+.unit.step-off { display: none; }
+#panel.searching .unit.step-off { display: block; }
+#panel.searching .steps, #panel.searching .step-nav { display: none; }
+.step-nav { display: flex; justify-content: space-between; gap: 10px; flex-wrap: wrap; margin-top: 22px; padding-top: 18px; border-top: 1px dashed var(--line); }
+.btn.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-fg); font-weight: 600; }
+.btn.primary:hover { color: var(--accent-fg); filter: brightness(1.08); }
+</style>
 <title>Fern Study Notes</title>
-<meta name="description" content="Noah's CS study notes: Java, Terminal, Git and Software Engineering.">
+<meta name="description" content="Noah's CS study notes: Java, Terminal, Git, Software Engineering and AI.">
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -341,7 +364,7 @@ body:not(.on-cover) .cover { display: none; }
     <div>
       <p class="eyebrow">Noah's CS field guide</p>
       <h1>Fern<br><span>Study</span></h1>
-      <p class="lede">Your notes for <strong>Java, the terminal, Git and software engineering</strong>, merged and cleaned up. Every card gives the main idea first, and you open it for the details and code.</p>
+      <p class="lede">Your notes for <strong>Java, the terminal, Git, software engineering and AI</strong>, merged and cleaned up. Every card gives the main idea first, and you open it for the details and code.</p>
       <div class="cta">
         <a class="cbtn primary" href="#java" data-subject="java">Start with Java →</a>
         <a class="cbtn" href="#contents" data-jump="contents">Contents</a>
@@ -399,6 +422,7 @@ body:not(.on-cover) .cover { display: none; }
 <script src="data/terminal.js"></script>
 <script src="data/git.js"></script>
 <script src="data/software-engineering.js"></script>
+<script src="data/ai.js"></script>
 <script src="app.js"></script>
 </body>
 </html>
