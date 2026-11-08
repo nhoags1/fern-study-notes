@@ -5,6 +5,7 @@ const SUBJECTS = [
   { id: "git", name: "Git", blurb: "Git and GitHub from the ground up, built from the night you set up this site. Includes the real errors you hit and how you fixed them." },
   { id: "software-engineering", name: "Software Engineering", blurb: "Your CS 307 development and testing methods notes: requirements, RAD and JAD, testing, maintenance and refactoring. Each card ends with a check-yourself question." },
   { id: "ai", name: "AI Crash Course with Fern", steps: true, blurb: "How AI systems really work, in 6 short modules: models, tokens, training, prompts, agents and tools, and AI security. Small Java examples throughout, and your own Garden agents as the running example." },
+  { id: "python", name: "Python", blurb: "A 12-week Python course built on the official tutorial and learnpython.org, with Java comparisons all the way through. One unit per week, about 4 hours each, in 30–45 minute sessions." },
   { id: "cpp", name: "C++", soon: "Will be built from your C++ study guide, with side-by-side comparisons to Java." },
   { id: "javascript", name: "JavaScript", soon: "Will be built from your 10-day JavaScript crash course." },
   { id: "cybersecurity", name: "Cybersecurity", soon: "Will be built from your 12-week cybersecurity and ethical hacking course." },
@@ -242,7 +243,7 @@ function renderRes(panel, d) {
 }
 
 /* ---------- cover page ---------- */
-const SHORT = { ai: "6 modules: LLMs, tokens, agents, AI security.", java: "Study guides, learning plan and cheat sheets.", terminal: "zsh on your Mac, from basics to scripts.", git: "Built from the night you set up this site.", "software-engineering": "CS 307 methods notes, with check-yourself questions." };
+const SHORT = { python: "12-week course, one unit per week, with Java side-by-sides.", ai: "6 modules: LLMs, tokens, agents, AI security.", java: "Study guides, learning plan and cheat sheets.", terminal: "zsh on your Mac, from basics to scripts.", git: "Built from the night you set up this site.", "software-engineering": "CS 307 methods notes, with check-yourself questions." };
 function renderCover() {
   const built = SUBJECTS.filter(s => !s.soon && DATA[s.id]);
   const cards = built.reduce((n, s) => n + DATA[s.id].units.reduce((k, u) => k + u.topics.length, 0), 0);
