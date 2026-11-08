@@ -1,0 +1,10 @@
+# Mac + tool junk
+.DS_Store
+.claude/
+
+# downloads
+*.zip
+
+# my drafts (not for the public site)
+drafts/
+ai-expansion-review.md
