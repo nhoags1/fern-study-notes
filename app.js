@@ -4,7 +4,7 @@ const SUBJECTS = [
   { id: "terminal", name: "Terminal", blurb: "The command line on your Mac (zsh), from the very basics to running Java, Homebrew, SSH and shell scripts." },
   { id: "git", name: "Git", blurb: "Git and GitHub from the ground up, built from the night you set up this site. Includes the real errors you hit and how you fixed them." },
   { id: "software-engineering", name: "Software Engineering", blurb: "Your CS 307 development and testing methods notes: requirements, RAD and JAD, testing, maintenance and refactoring. Each card ends with a check-yourself question." },
-  { id: "ai", name: "AI Crash Course with Fern", steps: true, blurb: "How AI systems really work, in 6 short modules: models, tokens, training, prompts, agents and tools, and AI security. Small Java examples throughout, and your own Garden agents as the running example." },
+  { id: "ai", name: "AI Crash Course with Fern", steps: true, blurb: "Understand AI, then build with it, in 12 short modules. Modules 1–6 explain models, tokens, training, prompts, agents and AI security, with small Java examples and your own Garden agents. Modules 7–12 are small Python projects: APIs, a tiny classifier, a local LLM, retrieval, evaluation and safe deployment." },
   { id: "python", name: "Python", blurb: "A 12-week Python course built on the official tutorial and learnpython.org, with Java comparisons all the way through. One unit per week, about 4 hours each, in 30–45 minute sessions." },
   { id: "cpp", name: "C++", soon: "Will be built from your C++ study guide, with side-by-side comparisons to Java." },
   { id: "javascript", name: "JavaScript", soon: "Will be built from your 10-day JavaScript crash course." },
@@ -243,7 +243,7 @@ function renderRes(panel, d) {
 }
 
 /* ---------- cover page ---------- */
-const SHORT = { python: "12-week course, one unit per week, with Java side-by-sides.", ai: "6 modules: LLMs, tokens, agents, AI security.", java: "Study guides, learning plan and cheat sheets.", terminal: "zsh on your Mac, from basics to scripts.", git: "Built from the night you set up this site.", "software-engineering": "CS 307 methods notes, with check-yourself questions." };
+const SHORT = { python: "12-week course, one unit per week, with Java side-by-sides.", ai: "12 modules: how AI works, then small Python builds.", java: "Study guides, learning plan and cheat sheets.", terminal: "zsh on your Mac, from basics to scripts.", git: "Built from the night you set up this site.", "software-engineering": "CS 307 methods notes, with check-yourself questions." };
 function renderCover() {
   const built = SUBJECTS.filter(s => !s.soon && DATA[s.id]);
   const cards = built.reduce((n, s) => n + DATA[s.id].units.reduce((k, u) => k + u.topics.length, 0), 0);
